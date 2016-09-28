@@ -92,14 +92,16 @@ func (s *Status) parseAttr(key string, value string) error {
 	switch key {
 	case repeat, random, single, consume:
 		return s.parseBoolAttr(key, value)
+	case elapsed, duration, xfade:
+		return s.parseDurationAttr(key, value)
 	case volume, playlist, playlistLength, song, songID, nextSong, nextSongID, bitrate, updatingDB:
 		return s.parseIntAttr(key, value)
-	case statusTime, elapsed, duration, xfade:
-		return s.parseDuration(key, value)
-	case state:
-		return s.parseState(value)
 	case audio:
 		return s.parseAudio(value)
+	case state:
+		return s.parseState(value)
+	case statusTime:
+		return s.parseTime(value)
 	case statusError:
 		s.Error = value
 		return nil
@@ -111,35 +113,42 @@ func (s *Status) parseAttr(key string, value string) error {
 	return nil
 }
 
-// parseDuration parses a time.Duration attribute into a Status field
-// using the input key and value.
-func (s *Status) parseDuration(key string, value string) error {
-	// All duration fields need a "s" suffix to be properly parsed
-	// as a value in seconds by time.ParseDuration.
-
-	if key == statusTime {
-		// Field time is in format "1:20", where:
-		//  -  1: current seconds elapsed
-		//  - 20: total seconds in song
-		vv := strings.Split(value, ":")
-		if len(vv) != 2 {
-			return fmt.Errorf("invalid %q field format: %q", key, value)
-		}
-
-		ct, err := time.ParseDuration(vv[0] + "s")
-		if err != nil {
-			return err
-		}
-		tt, err := time.ParseDuration(vv[1] + "s")
-		if err != nil {
-			return err
-		}
-
-		s.CurrentTime = ct
-		s.TotalTime = tt
-		return nil
+// parseBoolAttr parses a boolean attribute into a Status field using the
+// input key and value.
+func (s *Status) parseBoolAttr(key string, value string) error {
+	// Boolean values can only be 0 or 1.  No true/false values are
+	// sent by mpd.
+	switch value {
+	case "0", "1":
+		break
+	default:
+		return fmt.Errorf("value %q is not a valid boolean for key %q", value, key)
 	}
 
+	b, err := strconv.ParseBool(value)
+	if err != nil {
+		return err
+	}
+
+	switch key {
+	case repeat:
+		s.Repeat = b
+	case random:
+		s.Random = b
+	case single:
+		s.Single = b
+	case consume:
+		s.Consume = b
+	}
+
+	return nil
+}
+
+// parseDuration parses a time.Duration attribute into a Status field
+// using the input key and value.
+func (s *Status) parseDurationAttr(key string, value string) error {
+	// All duration fields need a "s" suffix to be properly parsed
+	// as a value in seconds by time.ParseDuration.
 	d, err := time.ParseDuration(value + "s")
 	if err != nil {
 		return err
@@ -152,6 +161,38 @@ func (s *Status) parseDuration(key string, value string) error {
 		s.Duration = d
 	case xfade:
 		s.Crossfade = d
+	}
+
+	return nil
+}
+
+// parseIntAttr parses an integer attribute into a Status field using the
+// input key and value.
+func (s *Status) parseIntAttr(key string, value string) error {
+	i, err := strconv.Atoi(value)
+	if err != nil {
+		return err
+	}
+
+	switch key {
+	case volume:
+		s.Volume = i
+	case playlist:
+		s.Playlist = i
+	case playlistLength:
+		s.PlaylistLength = i
+	case song:
+		s.Song = i
+	case songID:
+		s.SongID = i
+	case nextSong:
+		s.NextSong = i
+	case nextSongID:
+		s.NextSongID = i
+	case bitrate:
+		s.Bitrate = i
+	case updatingDB:
+		s.UpdatingDB = i
 	}
 
 	return nil
@@ -200,65 +241,29 @@ func (s *Status) parseState(value string) error {
 	}
 }
 
-// parseIntAttr parses an integer attribute into a Status field using the
-// input key and value.
-func (s *Status) parseIntAttr(key string, value string) error {
-	i, err := strconv.Atoi(value)
+// parseTime parses the time field into its two time.Duration fields
+// using the input value.
+func (s *Status) parseTime(value string) error {
+	// Field time is in format "1:20", where:
+	//  -  1: current seconds elapsed
+	//  - 20: total seconds in song
+	vv := strings.Split(value, ":")
+	if len(vv) != 2 {
+		return fmt.Errorf("invalid time field format: %q", value)
+	}
+
+	// All duration fields need a "s" suffix to be properly parsed
+	// as a value in seconds by time.ParseDuration.
+	ct, err := time.ParseDuration(vv[0] + "s")
+	if err != nil {
+		return err
+	}
+	tt, err := time.ParseDuration(vv[1] + "s")
 	if err != nil {
 		return err
 	}
 
-	switch key {
-	case volume:
-		s.Volume = i
-	case playlist:
-		s.Playlist = i
-	case playlistLength:
-		s.PlaylistLength = i
-	case song:
-		s.Song = i
-	case songID:
-		s.SongID = i
-	case nextSong:
-		s.NextSong = i
-	case nextSongID:
-		s.NextSongID = i
-	case bitrate:
-		s.Bitrate = i
-	case updatingDB:
-		s.UpdatingDB = i
-	}
-
-	return nil
-}
-
-// pasreBoolAttr parses a boolean attribute into a Status field using the
-// input key and value.
-func (s *Status) parseBoolAttr(key string, value string) error {
-	// Boolean values can only be 0 or 1.  No true/false values are
-	// sent by mpd.
-	switch value {
-	case "0", "1":
-		break
-	default:
-		return fmt.Errorf("value %q is not a valid boolean for key %q", value, key)
-	}
-
-	b, err := strconv.ParseBool(value)
-	if err != nil {
-		return err
-	}
-
-	switch key {
-	case repeat:
-		s.Repeat = b
-	case random:
-		s.Random = b
-	case single:
-		s.Single = b
-	case consume:
-		s.Consume = b
-	}
-
+	s.CurrentTime = ct
+	s.TotalTime = tt
 	return nil
 }
