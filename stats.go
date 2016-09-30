@@ -70,9 +70,7 @@ func (s *Stats) parseAttr(key string, value string) error {
 // parseDurationAttr parses a time.Duration attribute into a Stats field
 // using the input key and value.
 func (s *Stats) parseDurationAttr(key string, value string) error {
-	// All duration fields need a "s" suffix to be properly parsed
-	// as a value in seconds by time.ParseDuration.
-	d, err := time.ParseDuration(value + "s")
+	d, err := parseDurationSeconds(value)
 	if err != nil {
 		return err
 	}

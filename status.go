@@ -147,9 +147,7 @@ func (s *Status) parseBoolAttr(key string, value string) error {
 // parseDuration parses a time.Duration attribute into a Status field
 // using the input key and value.
 func (s *Status) parseDurationAttr(key string, value string) error {
-	// All duration fields need a "s" suffix to be properly parsed
-	// as a value in seconds by time.ParseDuration.
-	d, err := time.ParseDuration(value + "s")
+	d, err := parseDurationSeconds(value)
 	if err != nil {
 		return err
 	}
@@ -252,13 +250,11 @@ func (s *Status) parseTime(value string) error {
 		return fmt.Errorf("invalid time field format: %q", value)
 	}
 
-	// All duration fields need a "s" suffix to be properly parsed
-	// as a value in seconds by time.ParseDuration.
-	ct, err := time.ParseDuration(vv[0] + "s")
+	ct, err := parseDurationSeconds(vv[0])
 	if err != nil {
 		return err
 	}
-	tt, err := time.ParseDuration(vv[1] + "s")
+	tt, err := parseDurationSeconds(vv[1])
 	if err != nil {
 		return err
 	}
