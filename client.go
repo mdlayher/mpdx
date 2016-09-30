@@ -20,6 +20,16 @@ func New(c *mpd.Client) *Client {
 	}
 }
 
+// Stats retrieves statistics from an mpd server.
+func (c *Client) Stats() (*Stats, error) {
+	attrs, err := c.c.Stats()
+	if err != nil {
+		return nil, err
+	}
+
+	return NewStats(attrs)
+}
+
 // Status retrieves the current status of an mpd server.
 func (c *Client) Status() (*Status, error) {
 	attrs, err := c.c.Status()
@@ -36,5 +46,6 @@ var _ client = &mpd.Client{}
 // A client is a client which can communicate with mpd or a mocked
 // version of it.
 type client interface {
+	Stats() (mpd.Attrs, error)
 	Status() (mpd.Attrs, error)
 }

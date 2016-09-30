@@ -27,4 +27,5 @@ func testClient(attrs mpd.Attrs, err error) *Client {
 	}
 }
 
+func (c *memoryClient) Stats() (mpd.Attrs, error)  { return c.attrs, c.err }
 func (c *memoryClient) Status() (mpd.Attrs, error) { return c.attrs, c.err }
