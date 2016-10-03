@@ -8,10 +8,8 @@ Why?
 ----
 
 Package `mpd` is excellent, but it returns data in a wrapped `map[string]string`,
-instead of a unique `struct` per response type.
+instead of a unique `struct` per response type.  This is intentional, for the
+reasons described [in this issue](https://github.com/fhs/gompd/issues/31).
 
 Package `mpdx` provides these wrapped `struct` types, for better type safety
 and ease of use.
-
-In the future, it is possible that package `mpdx` could be added directly to
-package `mpd`.
